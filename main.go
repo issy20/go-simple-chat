@@ -65,6 +65,7 @@ func main() {
 	r.Route("/messages", func(r chi.Router) {
 		r.Post("/", mh.PostMessage)
 		r.Get("/{room_id}", mh.GetMessagesByRoomID)
+		r.Get("/", mh.GetRoomAndMessagesByRoomID)
 	})
 
 	r.Route("/members", func(r chi.Router) {

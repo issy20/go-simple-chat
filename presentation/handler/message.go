@@ -72,3 +72,31 @@ func (mh *MessageHandler) GetMessagesByRoomID(w http.ResponseWriter, r *http.Req
 	}
 	w.Write(res)
 }
+
+func (mh *MessageHandler) GetRoomAndMessagesByRoomID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	view := &JsonView{w: w, successCode: http.StatusCreated}
+	w.Header().Add("Content-Type", "application/json")
+	content, _ := ioutil.ReadAll(r.Body)
+	var roomMemberInputJson j.RoomMemberInputJson
+	if err := json.Unmarshal(content, &roomMemberInputJson); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	roomMemberInput := j.RoomMemberInputJsonToEntity(&roomMemberInputJson)
+	fmt.Print("roomMemberInput", roomMemberInput)
+	messages, err := mh.mu.GetRoomAndMessagesByRoomID(ctx, roomMemberInput)
+	fmt.Print("roomMember", messages)
+
+	if err != nil {
+		logger.Println(err)
+		view.ErrorView(err)
+		return
+	}
+	res, err := json.Marshal(j.MessagesEntityToJson(messages))
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Write(res)
+}

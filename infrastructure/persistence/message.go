@@ -63,3 +63,44 @@ func (mr *MessageRepository) GetMessagesByRoomID(ctx context.Context, roomId int
 	}
 	return dto.MessagesDtoToEntity(messageDto), nil
 }
+
+func (mr *MessageRepository) GetRoomAndMessagesByRoomID(ctx context.Context, usersId string) ([]*entity.Message, error) {
+	// get room id
+	var roomMemberDto dto.RoomMemberDto
+	query1 := `
+		SELECT * FROM (
+			SELECT room_id, GROUP_CONCAT(user_id ORDER BY user_id SEPARATOR ',') as room_member
+			FROM members
+			GROUP BY room_id
+		) as member_room
+		WHERE room_member = ?
+  `
+	stmt1, err := mr.conn.DB.Prepare(query1)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt1.Close()
+
+	err = mr.conn.DB.GetContext(ctx, &roomMemberDto, query1, usersId)
+	if err != nil {
+		return nil, fmt.Errorf("MessageRepository.GetRoomAndMessagesByRoomID Get roomId Error : %w", err)
+	}
+
+	// get message by room id
+	var messageDto []*dto.MessageDto
+	query2 := `
+	  SELECT * FROM messages WHERE room_id = ? ORDER BY ID ASC
+	`
+
+	stmt2, err := mr.conn.DB.Prepare(query2)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt2.Close()
+	err = mr.conn.DB.SelectContext(ctx, &messageDto, query2, &roomMemberDto.RoomID)
+	if err != nil {
+		return nil, fmt.Errorf("MessageRepository.GetRoomAndMessagesByRoomID Get messages Error : %w", err)
+	}
+
+	return dto.MessagesDtoToEntity(messageDto), nil
+}
