@@ -52,21 +52,19 @@ func main() {
 	// r.Use(middleware.Logger)
 	r.Use(httplog.RequestLogger(l))
 
-	r.Route("/test", func(r chi.Router) {
-		r.Post("/", handler.Test)
-	})
-
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/", uh.UserPost)
 	})
 
 	r.Route("/rooms", func(r chi.Router) {
-		r.Post("/", rh.RoomPost)
-		r.Get("/", rh.RoomGet)
+		r.Post("/", rh.PostRoom)
+		r.Get("/", rh.GetRoomMember)
+		r.Get("/{user_id}", rh.GetAllRoomName)
 	})
 
 	r.Route("/messages", func(r chi.Router) {
-		r.Post("/", mh.MessagePost)
+		r.Post("/", mh.PostMessage)
+		r.Get("/{room_id}", mh.GetMessagesByRoomID)
 	})
 
 	r.Route("/members", func(r chi.Router) {

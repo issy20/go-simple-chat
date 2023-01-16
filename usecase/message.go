@@ -16,6 +16,7 @@ type MessageUsecase struct {
 
 type IMessageUsecase interface {
 	CreateMessage(ctx context.Context, message *entity.Message) (*entity.Message, error)
+	GetMessagesByRoomID(ctx context.Context, roomId int) ([]*entity.Message, error)
 }
 
 func NewMessageUsecase(mr repository.IMessageRepository) IMessageUsecase {
@@ -27,4 +28,8 @@ func NewMessageUsecase(mr repository.IMessageRepository) IMessageUsecase {
 func (mu *MessageUsecase) CreateMessage(ctx context.Context, message *entity.Message) (*entity.Message, error) {
 	fmt.Print(message)
 	return mu.repo.CreateMessage(ctx, message)
+}
+
+func (mu *MessageUsecase) GetMessagesByRoomID(ctx context.Context, roomId int) ([]*entity.Message, error) {
+	return mu.repo.GetMessagesByRoomID(ctx, roomId)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/issy20/go-simple-chat/domain/entity"
 	"github.com/issy20/go-simple-chat/domain/repository"
+	"github.com/issy20/go-simple-chat/dto"
 	"github.com/issy20/go-simple-chat/infrastructure/database"
 )
 
@@ -31,41 +32,34 @@ func (mr *MessageRepository) CreateMessage(ctx context.Context, message *entity.
 		return nil, err
 	}
 	defer stmt.Close()
-	dto := messageEntityToDto(message)
-	fmt.Println(&dto)
-	res, err := stmt.ExecContext(ctx, &dto.RoomID, &dto.UserID, &dto.Message)
+	messageDto := dto.MessageEntityToDto(message)
+	fmt.Println(&messageDto)
+	res, err := stmt.ExecContext(ctx, &messageDto.RoomID, &messageDto.UserID, &messageDto.Message)
 
 	id, _ := res.LastInsertId()
-	dto.Id = (int)(id)
+	messageDto.Id = (int)(id)
 
 	if err != nil {
 		return nil, fmt.Errorf("MessageRepository.CreateNewMessage ExecContext Error : %w", err)
 	}
 
-	return messageDtoToEntity(&dto), nil
+	return dto.MessageDtoToEntity(&messageDto), nil
 }
 
-type messageDto struct {
-	Id      int    `db:"id" json:"id"`
-	RoomID  int    `db:"room_id" json:"room_id"`
-	UserID  int    `db:"user_id" json:"user_id"`
-	Message string `db:"message" json:"message"`
-}
+func (mr *MessageRepository) GetMessagesByRoomID(ctx context.Context, roomId int) ([]*entity.Message, error) {
+	var messageDto []*dto.MessageDto
+	query := `
+	  SELECT * FROM messages WHERE room_id = ? ORDER BY ID ASC
+	`
 
-func messageDtoToEntity(dto *messageDto) *entity.Message {
-	return &entity.Message{
-		Id:      dto.Id,
-		RoomID:  dto.RoomID,
-		UserID:  dto.UserID,
-		Message: dto.Message,
+	stmt, err := mr.conn.DB.Prepare(query)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func messageEntityToDto(u *entity.Message) messageDto {
-	return messageDto{
-		Id:      u.Id,
-		RoomID:  u.RoomID,
-		UserID:  u.UserID,
-		Message: u.Message,
+	defer stmt.Close()
+	err = mr.conn.DB.SelectContext(ctx, &messageDto, query, roomId)
+	if err != nil {
+		return nil, fmt.Errorf("MessageRepository.GetMessagesByRoomID Get Error : %w", err)
 	}
+	return dto.MessagesDtoToEntity(messageDto), nil
 }

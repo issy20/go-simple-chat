@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/issy20/go-simple-chat/domain/entity"
+	j "github.com/issy20/go-simple-chat/presentation/json"
 	"github.com/issy20/go-simple-chat/usecase"
 )
 
@@ -25,42 +25,23 @@ func (mh *MemberHandler) MemberPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	content, _ := ioutil.ReadAll(r.Body)
 	// json
-	var memberJson MemberJson
+	var memberJson j.MemberJson
 	if err := json.Unmarshal(content, &memberJson); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	// json -> entity
-	member := memberJsonToEntity(&memberJson)
+	member := j.MemberJsonToEntity(&memberJson)
 	createdMember, err := mh.mu.CreateMember(ctx, member)
 	if err != nil {
 		logger.Println(err)
 		view.ErrorView(err)
 		return
 	}
-	res, err := json.Marshal(memberEntityToJson(createdMember))
+	res, err := json.Marshal(j.MemberEntityToJson(createdMember))
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	w.Write(res)
-}
-
-type MemberJson struct {
-	RoomID int `json:"room_id"`
-	UserID int `json:"user_id"`
-}
-
-func memberEntityToJson(c *entity.Member) MemberJson {
-	return MemberJson{
-		RoomID: c.RoomID,
-		UserID: c.UserID,
-	}
-}
-
-func memberJsonToEntity(j *MemberJson) *entity.Member {
-	return &entity.Member{
-		RoomID: j.RoomID,
-		UserID: j.UserID,
-	}
 }

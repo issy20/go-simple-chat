@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/issy20/go-simple-chat/domain/entity"
+	j "github.com/issy20/go-simple-chat/presentation/json"
 	"github.com/issy20/go-simple-chat/usecase"
 )
 
@@ -35,17 +36,5 @@ func (u *UserHandler) UserPost(w http.ResponseWriter, r *http.Request) {
 		view.ErrorView(err)
 		return
 	}
-	view.View(userEntityToJson(user))
-}
-
-type userJson struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-func userEntityToJson(c *entity.User) userJson {
-	return userJson{
-		Id:   c.Id,
-		Name: c.Name,
-	}
+	view.View(j.UserEntityToJson(user))
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/issy20/go-simple-chat/domain/entity"
 	"github.com/issy20/go-simple-chat/domain/repository"
+	"github.com/issy20/go-simple-chat/dto"
 	"github.com/issy20/go-simple-chat/infrastructure/database"
 )
 
@@ -39,7 +40,7 @@ func (ur *MemberRepository) CreateMember(ctx context.Context, member *entity.Mem
 	// if err != nil {
 	// 	return nil, fmt.Errorf("MemberRepository.CreateMember ExecContext Error : %w", err)
 	// }
-	dto := memberEntityToDto(member)
+	memberDto := dto.MemberEntityToDto(member)
 
 	// fmt.Print(&dto)
 
@@ -48,28 +49,9 @@ func (ur *MemberRepository) CreateMember(ctx context.Context, member *entity.Mem
 	// 	"user_id": &dto.UserID,
 	// }
 
-	if _, err := ur.conn.DB.NamedExecContext(ctx, query, &dto); err != nil {
+	if _, err := ur.conn.DB.NamedExecContext(ctx, query, &memberDto); err != nil {
 		return nil, fmt.Errorf("MemberRepository.CreateMember ExecContext Error : %w", err)
 	}
 
-	return memberDtoToEntity(&dto), nil
-}
-
-type memberDto struct {
-	RoomID int `db:"room_id"`
-	UserID int `db:"user_id"`
-}
-
-func memberDtoToEntity(dto *memberDto) *entity.Member {
-	return &entity.Member{
-		RoomID: dto.RoomID,
-		UserID: dto.UserID,
-	}
-}
-
-func memberEntityToDto(u *entity.Member) memberDto {
-	return memberDto{
-		RoomID: u.RoomID,
-		UserID: u.UserID,
-	}
+	return dto.MemberDtoToEntity(&memberDto), nil
 }

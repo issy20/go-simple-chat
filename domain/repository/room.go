@@ -9,4 +9,5 @@ import (
 type IRoomRepository interface {
 	CreateRoom(ctx context.Context, room *entity.Room) (*entity.Room, error)
 	GetRoomByUsersID(ctx context.Context, usersID string) (*entity.RoomMember, error)
+	GetAllRoomNameByUserID(ctx context.Context, userID int) ([]*entity.Room, error)
 }

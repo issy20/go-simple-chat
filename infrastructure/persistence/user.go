@@ -6,6 +6,7 @@ import (
 
 	"github.com/issy20/go-simple-chat/domain/entity"
 	"github.com/issy20/go-simple-chat/domain/repository"
+	"github.com/issy20/go-simple-chat/dto"
 	"github.com/issy20/go-simple-chat/infrastructure/database"
 )
 
@@ -31,34 +32,15 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *entity.User) (*e
 		return nil, err
 	}
 	defer stmt.Close()
-	dto := userEntityToDto(user)
-	res, err := stmt.ExecContext(ctx, &dto.Name)
+	userDto := dto.UserEntityToDto(user)
+	res, err := stmt.ExecContext(ctx, &userDto.Name)
 
 	id, _ := res.LastInsertId()
-	dto.Id = (int)(id)
+	userDto.Id = (int)(id)
 
 	if err != nil {
 		return nil, fmt.Errorf("UserRepository.CreateNewUser ExecContext Error : %w", err)
 	}
 
-	return userDtoToEntity(&dto), nil
-}
-
-type userDto struct {
-	Id   int    `db:"id" json:"id"`
-	Name string `db:"name" json:"name"`
-}
-
-func userDtoToEntity(dto *userDto) *entity.User {
-	return &entity.User{
-		Id:   dto.Id,
-		Name: dto.Name,
-	}
-}
-
-func userEntityToDto(u *entity.User) userDto {
-	return userDto{
-		Id:   u.Id,
-		Name: u.Name,
-	}
+	return dto.UserDtoToEntity(&userDto), nil
 }

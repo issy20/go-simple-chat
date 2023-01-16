@@ -6,6 +6,7 @@ import (
 
 	"github.com/issy20/go-simple-chat/domain/entity"
 	"github.com/issy20/go-simple-chat/domain/repository"
+	"github.com/issy20/go-simple-chat/dto"
 	"github.com/issy20/go-simple-chat/infrastructure/database"
 )
 
@@ -23,30 +24,29 @@ func NewRoomRepository(conn *database.Conn) repository.IRoomRepository {
 
 func (rr *RoomRepository) CreateRoom(ctx context.Context, room *entity.Room) (*entity.Room, error) {
 	query := `
-	INSERT INTO rooms (name)
-		VALUES (:name)
+		INSERT INTO rooms (name)
+		VALUES (?)
 	`
 	stmt, err := rr.conn.DB.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
-	dto := roomEntityToDto(room)
-	res, err := stmt.ExecContext(ctx, &dto.Name)
+	roomDto := dto.RoomEntityToDto(room)
+	res, err := stmt.ExecContext(ctx, &roomDto.Name)
 
 	id, _ := res.LastInsertId()
-	dto.Id = (int)(id)
+	roomDto.Id = (int)(id)
 
 	if err != nil {
 		return nil, fmt.Errorf("RoomRepository.CreateNewRoom ExecContext Error : %w", err)
 	}
 
-	return roomDtoToEntity(&dto), nil
-
+	return dto.RoomDtoToEntity(&roomDto), nil
 }
 
 func (rr *RoomRepository) GetRoomByUsersID(ctx context.Context, usersId string) (*entity.RoomMember, error) {
-	var dto roomMemberDto
+	var roomMemberDto dto.RoomMemberDto
 	query := `
 		SELECT * FROM (
 			SELECT room_id, GROUP_CONCAT(user_id ORDER BY user_id SEPARATOR ',') as room_member
@@ -62,49 +62,31 @@ func (rr *RoomRepository) GetRoomByUsersID(ctx context.Context, usersId string) 
 	}
 	defer stmt.Close()
 
-	err = rr.conn.DB.GetContext(ctx, &dto, query, usersId)
+	err = rr.conn.DB.GetContext(ctx, &roomMemberDto, query, usersId)
 	if err != nil {
 		return nil, fmt.Errorf("RoomRepository.GetRoomByUsersID Get Error : %w", err)
 	}
 
-	return roomMemberDtoToEntity(&dto), nil
-
+	return dto.RoomMemberDtoToEntity(&roomMemberDto), nil
 }
 
-type roomDto struct {
-	Id   int    `db:"id"`
-	Name string `db:"name"`
-}
-
-func roomDtoToEntity(dto *roomDto) *entity.Room {
-	return &entity.Room{
-		Id:   dto.Id,
-		Name: dto.Name,
+func (rr *RoomRepository) GetAllRoomNameByUserID(ctx context.Context, userID int) ([]*entity.Room, error) {
+	var roomDto []*dto.RoomDto
+	query := `
+	  SELECT members.room_id as id, rooms.name as name FROM members
+		INNER JOIN rooms ON rooms.id = members.room_id
+		WHERE user_id = ?
+	`
+	stmt, err := rr.conn.DB.Prepare(query)
+	if err != nil {
+		return nil, err
 	}
-}
 
-func roomEntityToDto(r *entity.Room) roomDto {
-	return roomDto{
-		Id:   r.Id,
-		Name: r.Name,
+	defer stmt.Close()
+	err = rr.conn.DB.SelectContext(ctx, &roomDto, query, userID)
+	fmt.Print("room_member")
+	if err != nil {
+		return nil, fmt.Errorf("RoomRepository.GetAllRoomNameByUserID Get Error : %w", err)
 	}
+	return dto.RoomsDtoToEntity(roomDto), nil
 }
-
-type roomMemberDto struct {
-	RoomID     int    `db:"room_id"`
-	RoomMember string `db:"room_member"`
-}
-
-func roomMemberDtoToEntity(dto *roomMemberDto) *entity.RoomMember {
-	return &entity.RoomMember{
-		RoomID:     dto.RoomID,
-		RoomMember: dto.RoomMember,
-	}
-}
-
-// func roomMemberEntityToDto(r *entity.RoomMember) roomMemberDto {
-// 	return roomMemberDto{
-// 		RoomID:     r.RoomID,
-// 		RoomMember: r.RoomMember,
-// 	}
-// }

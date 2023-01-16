@@ -17,6 +17,7 @@ type RoomUsecase struct {
 type IRoomUsecase interface {
 	CreateRoom(ctx context.Context, room *entity.Room) (*entity.Room, error)
 	GetRoomByUsersID(ctx context.Context, input *entity.GetRoomMemberInput) (*entity.RoomMember, error)
+	GetAllRoomNameByUserID(ctx context.Context, userID int) ([]*entity.Room, error)
 }
 
 func NewRoomUsecase(rr repository.IRoomRepository) IRoomUsecase {
@@ -25,12 +26,16 @@ func NewRoomUsecase(rr repository.IRoomRepository) IRoomUsecase {
 	}
 }
 
-func (rr *RoomUsecase) CreateRoom(ctx context.Context, room *entity.Room) (*entity.Room, error) {
-	return rr.repo.CreateRoom(ctx, room)
+func (ru *RoomUsecase) CreateRoom(ctx context.Context, room *entity.Room) (*entity.Room, error) {
+	return ru.repo.CreateRoom(ctx, room)
 }
 
-func (rr *RoomUsecase) GetRoomByUsersID(ctx context.Context, input *entity.GetRoomMemberInput) (*entity.RoomMember, error) {
+func (ru *RoomUsecase) GetRoomByUsersID(ctx context.Context, input *entity.GetRoomMemberInput) (*entity.RoomMember, error) {
 	usersId := fmt.Sprintf("%d,%d", input.MyID, input.UserID)
 	fmt.Print(usersId)
-	return rr.repo.GetRoomByUsersID(ctx, usersId)
+	return ru.repo.GetRoomByUsersID(ctx, usersId)
+}
+
+func (ru *RoomUsecase) GetAllRoomNameByUserID(ctx context.Context, userID int) ([]*entity.Room, error) {
+	return ru.repo.GetAllRoomNameByUserID(ctx, userID)
 }
